@@ -638,7 +638,7 @@ class ArmBase(RolloutBase, ArmBaseConfig):
         if "horizon_cost" not in kwargs:
             kwargs["horizon_cost"] = False
 
-        cost = self.cost_fn(state, None, no_coll=no_coll, **kwargs)
+        cost = self.cost_fn(state, None, **kwargs)
 
         if return_state:
             return cost, state

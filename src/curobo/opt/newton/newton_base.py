@@ -142,7 +142,9 @@ class NewtonOptBase(Optimizer, NewtonOptConfig):
         # run opt graph
         if not self.cu_opt_init:
             self._initialize_opt_iters_graph(q, grad_q, shift_steps=shift_steps)
+        best_q = q
         for i in range(self.outer_iters):
+            print(f"newton outer iter: {i+1}/{self.outer_iters}")
             best_q, best_cost, q, grad_q = self._call_opt_iters_graph(q, grad_q)
             if (
                 not self.fixed_iters

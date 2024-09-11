@@ -229,6 +229,10 @@ class IKSolverConfig:
         base_config_data["convergence"]["pose_cfg"]["project_distance"] = project_pose_to_goal_frame
         config_data["cost"]["pose_cfg"]["project_distance"] = project_pose_to_goal_frame
         grad_config_data["cost"]["pose_cfg"]["project_distance"] = project_pose_to_goal_frame
+        base_config_data["cost"]["link_pose_cfg"]["project_distance"] = project_pose_to_goal_frame
+        base_config_data["convergence"]["link_pose_cfg"]["project_distance"] = project_pose_to_goal_frame
+        config_data["cost"]["link_pose_cfg"]["project_distance"] = project_pose_to_goal_frame
+        grad_config_data["cost"]["link_pose_cfg"]["project_distance"] = project_pose_to_goal_frame
 
         if collision_cache is not None:
             base_config_data["world_collision_checker_cfg"]["cache"] = collision_cache

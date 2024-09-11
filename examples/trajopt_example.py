@@ -27,6 +27,8 @@ from curobo.wrap.reacher.trajopt import TrajOptSolver, TrajOptSolverConfig
 
 def plot_js(trajectory: JointState):
     # Third Party
+    import matplotlib as mpl
+    mpl.use("Agg")
     import matplotlib.pyplot as plt
 
     _, axs = plt.subplots(4, 1)
@@ -44,7 +46,8 @@ def plot_js(trajectory: JointState):
         if qddd is not None:
             axs[3].plot(qddd[:, i], label=str(i))
     plt.legend()
-    plt.show()
+    # plt.show()
+    plt.savefig("trajopt_example.png")
 
 
 def plot_traj(trajectory):

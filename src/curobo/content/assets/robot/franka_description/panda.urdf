@@ -326,8 +326,8 @@
     <parent link="panda_link8"/>
     <child link="right_gripper"/>
   </joint>
-   <link name="panda_grasptarget">
- <inertial>
+  <link name="panda_grasptarget">
+    <inertial>
       <origin rpy="0 0 0" xyz="0 0 0"/>
        <mass value="0.0"/>
        <inertia ixx="0.1" ixy="0" ixz="0" iyy="0.1" iyz="0" izz="0.1"/>

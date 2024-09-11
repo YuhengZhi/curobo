@@ -336,6 +336,11 @@ class TrajOptSolverConfig:
         config_data["cost"]["pose_cfg"]["project_distance"] = project_pose_to_goal_frame
         grad_config_data["cost"]["pose_cfg"]["project_distance"] = project_pose_to_goal_frame
 
+        base_config_data["cost"]["link_pose_cfg"]["project_distance"] = project_pose_to_goal_frame
+        base_config_data["convergence"]["link_pose_cfg"]["project_distance"] = project_pose_to_goal_frame
+        config_data["cost"]["link_pose_cfg"]["project_distance"] = project_pose_to_goal_frame
+        grad_config_data["cost"]["link_pose_cfg"]["project_distance"] = project_pose_to_goal_frame
+
         config_data["model"]["horizon"] = traj_tsteps
         grad_config_data["model"]["horizon"] = traj_tsteps
         if minimize_jerk is not None:
@@ -779,6 +784,7 @@ class TrajOptSolver(TrajOptSolverConfig):
         num_seeds: Optional[int] = None,
         seed_success: Optional[torch.Tensor] = None,
         newton_iters: Optional[int] = None,
+        no_init_solver: bool = False,
     ) -> TrajOptResult:
         """Solve trajectory optimization problem with any solve type.
 
@@ -809,6 +815,7 @@ class TrajOptSolver(TrajOptSolverConfig):
                 return_all_solutions,
                 num_seeds,
                 newton_iters=newton_iters,
+                no_init_solver=no_init_solver,
             )
         elif solve_type == ReacherSolveType.GOALSET:
             return self.solve_goalset(
@@ -870,6 +877,7 @@ class TrajOptSolver(TrajOptSolverConfig):
         num_seeds: Optional[int] = None,
         seed_success: Optional[torch.Tensor] = None,
         newton_iters: Optional[int] = None,
+        no_init_solver: bool = False,
     ):
         """Solve trajectory optimization problem with a given solve state.
 
@@ -915,6 +923,8 @@ class TrajOptSolver(TrajOptSolverConfig):
         if goal_buffer.goal_pose.position is not None:
             goal_buffer.goal_state = None
         self.solver.reset()
+        if no_init_solver:
+            self.solver._init_solver = True
         result = self.solver.solve(goal_buffer, seed_traj)
         log_info("Ran TO")
         traj_result = self._get_result(
@@ -940,6 +950,7 @@ class TrajOptSolver(TrajOptSolverConfig):
         return_all_solutions: bool = False,
         num_seeds: Optional[int] = None,
         newton_iters: Optional[int] = None,
+        no_init_solver: bool = False,
     ) -> TrajOptResult:
         """Solve trajectory optimization problem for a single goal.
 
@@ -983,6 +994,7 @@ class TrajOptSolver(TrajOptSolverConfig):
             return_all_solutions,
             num_seeds,
             newton_iters=newton_iters,
+            no_init_solver=no_init_solver,
         )
 
     def solve_goalset(

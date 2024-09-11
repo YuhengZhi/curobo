@@ -541,11 +541,14 @@ class OrientationError(Function):
 
 
 @get_torch_jit_decorator()
-def normalize_quaternion(in_quaternion: torch.Tensor) -> torch.Tensor:
+def normalize_quaternion(in_quaternion: torch.Tensor, eps: float = 1e-8) -> torch.Tensor:
     k = torch.sign(in_quaternion[..., 0:1])
     # NOTE: torch sign returns 0 as sign value when value is 0.0
     k = torch.where(k == 0, 1.0, k)
-    k2 = k / torch.linalg.norm(in_quaternion, dim=-1, keepdim=True)
+    # k2 = k / torch.linalg.norm(in_quaternion, dim=-1, keepdim=True) # May lead to NaN in gradients
+    k2 = k / torch.sqrt(
+        torch.sum(in_quaternion ** 2, dim=-1, keepdim=True) + eps
+    )
     # normalize quaternion
     in_q = k2 * in_quaternion
     return in_q

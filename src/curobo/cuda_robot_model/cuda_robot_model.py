@@ -20,7 +20,7 @@ from __future__ import annotations
 
 # Standard Library
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, Tuple
 
 # Third Party
 import torch
@@ -65,6 +65,9 @@ class CudaRobotModelConfig:
 
     #: Names of links to compute poses with forward kinematics.
     link_names: List[str]
+
+    #: Pairs of links whose relative poses are interested in cost computation.
+    link_pairs: List[List[str, str]]
 
     #: Tensors representing kinematics of the robot. This can be created using
     #: :class:`~curobo.cuda_robot_model.cuda_robot_generator.CudaRobotGenerator`.
@@ -249,6 +252,7 @@ class CudaRobotModelConfig:
         return CudaRobotModelConfig(
             tensor_args=generator.tensor_args,
             link_names=generator.link_names,
+            link_pairs=generator.link_pairs,
             kinematics_config=generator.kinematics_config,
             self_collision_config=generator.self_collision_config,
             kinematics_parser=generator.kinematics_parser,

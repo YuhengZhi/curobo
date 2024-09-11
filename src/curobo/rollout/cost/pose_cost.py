@@ -43,14 +43,14 @@ class PoseCostConfig(CostConfig):
     use_metric: bool = False
     project_distance: bool = True
     run_vec_weight: Optional[List[float]] = None
-    use_projected_distance: bool = True
+    # use_projected_distance: bool = True
     offset_waypoint: List[float] = None
     offset_tstep_fraction: float = -1.0
     waypoint_horizon: int = 0
 
     def __post_init__(self):
         if self.run_vec_weight is not None:
-            self.run_vec_weight = self.tensor_args.to_device(self.run_vec_weight)
+            self.run_vec_weight = self.tensor_args.to_device(self.run_vec_weight).clone()
         else:
             self.run_vec_weight = torch.ones(
                 6, device=self.tensor_args.device, dtype=self.tensor_args.dtype
@@ -67,7 +67,7 @@ class PoseCostConfig(CostConfig):
             self.offset_waypoint = [0, 0, 0, 0, 0, 0]
         if self.run_weight is None:
             self.run_weight = 1
-        self.offset_waypoint = self.tensor_args.to_device(self.offset_waypoint)
+        self.offset_waypoint = self.tensor_args.to_device(self.offset_waypoint).clone()
         if isinstance(self.offset_tstep_fraction, float):
             self.offset_tstep_fraction = self.tensor_args.to_device([self.offset_tstep_fraction])
         return super().__post_init__()
@@ -102,6 +102,7 @@ class PoseCostMetric:
             offset_rotation=None if self.offset_rotation is None else self.offset_rotation.clone(),
             offset_tstep_fraction=self.offset_tstep_fraction,
             remove_offset_waypoint=self.remove_offset_waypoint,
+            include_link_pose=self.include_link_pose,
         )
 
     @classmethod
@@ -152,7 +153,7 @@ class PoseCost(CostBase, PoseCostConfig):
         CostBase.__init__(self)
         self.rot_weight = self.vec_weight[0:3]
         self.pos_weight = self.vec_weight[3:6]
-        self._vec_convergence = self.tensor_args.to_device(self.vec_convergence)
+        self._vec_convergence = self.tensor_args.to_device(self.vec_convergence).clone()
         self._batch_size = 0
 
     def update_metric(self, metric: PoseCostMetric):

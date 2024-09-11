@@ -257,6 +257,7 @@ class ParticleOptBase(Optimizer, ParticleOptConfig):
             self.debug.append(self._get_action_seq(mode=self.sample_mode).clone())
 
         for _ in range(n_iters):
+            print(f"particle iters: {_}/{n_iters}")
             # generate random simulated trajectories
             trajectory = self.generate_rollouts()
             trajectory.actions = trajectory.actions.view(

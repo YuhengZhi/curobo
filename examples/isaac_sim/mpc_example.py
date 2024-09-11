@@ -251,7 +251,7 @@ def main():
     init_world = False
     cmd_state_full = None
     step = 0
-    add_extensions(simulation_app, args.headless_mode)
+    # add_extensions(simulation_app, args.headless_mode)
     while simulation_app.is_running():
         if not init_world:
             for _ in range(10):
@@ -354,7 +354,7 @@ def main():
         cmd_state_full = cmd_state
 
         art_action = ArticulationAction(
-            cmd_state.position.cpu().numpy(),
+            cmd_state.position[0].cpu().numpy(),
             # cmd_state.velocity.cpu().numpy(),
             joint_indices=idx_list,
         )
@@ -362,13 +362,16 @@ def main():
         if step_index % 1000 == 0:
             print(mpc_result.metrics.feasible.item(), mpc_result.metrics.pose_error.item())
 
-        if succ:
-            # set desired joint angles obtained from IK:
-            for _ in range(3):
-                articulation_controller.apply_action(art_action)
+        try:
+            if succ:
+                # set desired joint angles obtained from IK:
+                for _ in range(3):
+                    articulation_controller.apply_action(art_action)
 
-        else:
-            carb.log_warn("No action is being taken.")
+            else:
+                carb.log_warn("No action is being taken.")
+        except ValueError as e:
+            carb.log_warn(f"Error: {e}")
 
 
 ############################################################

@@ -2328,7 +2328,9 @@ class MotionGen(MotionGenConfig):
             # ee_T_w
         ee_pose = ee_pose.inverse()  # ee_T_w to multiply all objects later
         max_spheres = self.robot_cfg.kinematics.kinematics_config.get_number_of_spheres(link_name)
+        print(f"attached object's max_spheres: {max_spheres}")
         n_spheres = int(max_spheres / len(object_names))
+        print(f"attached object's n_spheres: {n_spheres}")
         sphere_tensor = torch.zeros((max_spheres, 4))
         sphere_tensor[:, 3] = -10.0
         sph_list = []
@@ -2357,6 +2359,8 @@ class MotionGen(MotionGenConfig):
                 fit_type=sphere_fit_type,
                 voxelize_method=voxelize_method,
             )
+            # WorldConfig(sphere=sph).save_world_as_mesh(f"attached_object_{x.replace('/', '_')}.obj")
+            # print(f"Saved attached object_{x.replace('/', '_')}.obj")
             sph_list += [s.position + [s.radius] for s in sph]
 
             self.world_coll_checker.enable_obstacle(enable=False, name=x)
@@ -3054,6 +3058,7 @@ class MotionGen(MotionGenConfig):
             if n == 10:
                 self.reset_seed()
                 log_warn("Couldn't find solution with 10 attempts, resetting seeds")
+                # log_warn("Couldn't find solution with 10 attempts, but not resetting seeds")
 
         result.solve_time = time_dict["solve_time"]
         result.ik_time = time_dict["ik_time"]

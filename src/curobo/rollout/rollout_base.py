@@ -110,6 +110,7 @@ class Goal(Sequence):
         d_list = [
             self.goal_state,
             self.goal_pose,
+            self.links_goal_pose,
             self.current_state,
             self.retract_state,
             self.batch_pose_idx,
@@ -126,14 +127,15 @@ class Goal(Sequence):
             n_goalset=self.n_goalset,
             goal_state=idx_vals[0],
             goal_pose=idx_vals[1],
-            current_state=idx_vals[2],
-            retract_state=idx_vals[3],
-            batch_pose_idx=idx_vals[4],
-            batch_goal_state_idx=idx_vals[5],
-            batch_retract_state_idx=idx_vals[6],
-            batch_current_state_idx=idx_vals[7],
-            batch_enable_idx=idx_vals[8],
-            batch_world_idx=idx_vals[9],
+            links_goal_pose=idx_vals[2],
+            current_state=idx_vals[3],
+            retract_state=idx_vals[4],
+            batch_pose_idx=idx_vals[5],
+            batch_goal_state_idx=idx_vals[6],
+            batch_retract_state_idx=idx_vals[7],
+            batch_current_state_idx=idx_vals[8],
+            batch_enable_idx=idx_vals[9],
+            batch_world_idx=idx_vals[10],
         )
 
     def __len__(self):
@@ -327,8 +329,11 @@ class Goal(Sequence):
             else:
                 for k in goal.links_goal_pose.keys():
                     self.links_goal_pose[k] = self._copy_buffer(
-                        self.links_goal_pose[k], goal.links_goal_pose[k]
+                        self.links_goal_pose.get(k, None), goal.links_goal_pose[k]
                     )
+                for k in list(self.links_goal_pose.keys()):
+                    if k not in goal.links_goal_pose.keys():
+                        self.links_goal_pose.pop(k)
         self._update_batch_size()
         # copy pose indices as well?
         if goal.update_batch_idx_buffers and update_idx_buffers:

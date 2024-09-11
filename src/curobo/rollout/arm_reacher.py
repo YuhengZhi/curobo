@@ -32,6 +32,8 @@ from curobo.util.helpers import list_idx_if_not_none
 from curobo.util.logger import log_error, log_info, log_warn
 from curobo.util.tensor_util import cat_max
 from curobo.util.torch_utils import get_torch_jit_decorator
+from curobo.types.math import Pose
+from curobo.geom.transform import torch_quaternion_to_matrix, torch_matrix_to_quaternion
 
 # Local Folder
 from .arm_base import ArmBase, ArmBaseConfig, ArmCostConfig
@@ -191,6 +193,9 @@ class ArmReacher(ArmBase, ArmReacherConfig):
             for i in self.kinematics.link_names:
                 if i != self.kinematics.ee_link:
                     self._link_pose_costs[i] = PoseCost(self.cost_cfg.link_pose_cfg)
+            if self.kinematics.link_pairs is not None:
+                for link_pair in map(tuple, self.kinematics.link_pairs):
+                    self._link_pose_costs[link_pair] = PoseCost(self.cost_cfg.link_pose_cfg)
         if self.cost_cfg.straight_line_cfg is not None:
             self.straight_line_cost = StraightLineCost(self.cost_cfg.straight_line_cfg)
         if self.cost_cfg.zero_vel_cfg is not None:
@@ -227,6 +232,9 @@ class ArmReacher(ArmBase, ArmReacherConfig):
             for i in self.kinematics.link_names:
                 if i != self.kinematics.ee_link:
                     self._link_pose_convergence[i] = PoseCost(self.convergence_cfg.link_pose_cfg)
+            if self.kinematics.link_pairs is not None:
+                for link_pair in map(tuple, self.kinematics.link_pairs):
+                    self._link_pose_convergence[link_pair] = PoseCost(self.convergence_cfg.link_pose_cfg)
         if self.convergence_cfg.cspace_cfg is not None:
             self.convergence_cfg.cspace_cfg.dof = self.d_action
             self.cspace_convergence = DistCost(self.convergence_cfg.cspace_cfg)
@@ -234,7 +242,7 @@ class ArmReacher(ArmBase, ArmReacherConfig):
         # check if g_dist is required in any of the cost terms:
         self.update_params(Goal(current_state=self._start_state))
 
-    def cost_fn(self, state: KinematicModelState, action_batch=None):
+    def cost_fn(self, state: KinematicModelState, action_batch=None, return_list=False):
         """
         Compute cost given that state dictionary and actions
 
@@ -273,16 +281,89 @@ class ArmReacher(ArmBase, ArmReacherConfig):
 
                 for k in self._goal_buffer.links_goal_pose.keys():
                     if k != self.kinematics.ee_link:
-                        current_fn = self._link_pose_costs[k]
-                        if current_fn.enabled:
-                            # get link pose
-                            current_pose = link_poses[k].contiguous()
-                            current_pos = current_pose.position
-                            current_quat = current_pose.quaternion
+                        if k in link_poses:
+                            current_fn = self._link_pose_costs[k]
+                            if current_fn.enabled:
+                                # get link pose
+                                current_pose = link_poses[k].contiguous()
+                                current_pos = current_pose.position
+                                current_quat = current_pose.quaternion
 
-                            c = current_fn.forward(current_pos, current_quat, self._goal_buffer, k)
-                            cost_list.append(c)
+                                c = current_fn.forward(current_pos, current_quat, self._goal_buffer, k)
+                                cost_list.append(c)
 
+                        elif isinstance(k, tuple):
+                            # cost on relative pose
+                            current_fn = self._link_pose_costs[k]
+                            k1, k2 = k
+                            if current_fn.enabled:
+                                # get link pose
+                                current_pose1 = link_poses[k1]
+                                current_pose1 = Pose(
+                                    position=current_pose1.position,  #.detach(),
+                                    quaternion=current_pose1.quaternion,  #.detach(),
+                                    normalize_rotation=False,
+                                )
+                                current_pose2 = link_poses[k2]
+                                # def check_grad(x, name=None):
+                                #     assert x is not None
+                                #     print(f'{name}.grad are all zero? {(x == 0).all()}')
+                                #     print(f'{name}.grad, {x}')
+                                #     return x
+                                # if current_pose2.position.grad_fn is not None:
+                                #     current_pose2.position.register_hook(lambda grad: check_grad(grad, 'current_pose2.position'))
+                                # current_pose2 = Pose(
+                                #     position=current_pose2.position.detach(),
+                                #     quaternion=current_pose2.quaternion.detach(),
+                                # )
+                                # prev_batch_dims = current_pose1.position.shape[:-1]
+                                # current
+                                pose1_rotmat = torch_quaternion_to_matrix(current_pose1.quaternion)
+                                pose1_rotmatT = pose1_rotmat.transpose(-1, -2)
+                                pose1_T_pose2_rotmat = pose1_rotmatT @ torch_quaternion_to_matrix(current_pose2.quaternion)
+                                pose1_T_pose2_pos = pose1_rotmatT @ (current_pose2.position - current_pose1.position).unsqueeze(-1)
+                                pose1_T_pose2_pos = pose1_T_pose2_pos.squeeze(-1)
+                                # if pose1_T_pose2_pos.grad_fn is not None:
+                                #     pose1_T_pose2_pos.register_hook(lambda grad: check_grad(grad, 'pose1_T_pose2_pos'))
+                                pose1_T_pose2_quat = torch_matrix_to_quaternion(pose1_T_pose2_rotmat)
+                                # if pose1_T_pose2_quat.grad_fn is not None:
+                                #     pose1_T_pose2_quat.register_hook(lambda grad: check_grad(grad, 'pose1_T_pose2_quat'))
+
+                                # pose1_inverse = current_pose1.inverse()
+                                # if pose1_inverse.position.grad_fn is not None:
+                                #     pose1_inverse.position.register_hook(lambda grad: check_grad(grad, 'pose1_inverse.position'))
+                                # pose1_T_pose2 = pose1_inverse.multiply(current_pose2)
+                                
+                                # pose1_T_pose2 = current_pose1.inverse().multiply(current_pose2)
+                                # pose1_T_pose2_pos = pose1_T_pose2.position
+                                # if pose1_T_pose2_pos.grad_fn is not None:
+                                #     pose1_T_pose2_pos.register_hook(lambda grad: check_grad(grad, 'pose1_T_pose2_pos'))
+                                # print(f"pose1_T_pose2_pos: {pose1_T_pose2_pos}")
+                                # print(f"pose1_T_pose2_pos.grad_fn: {pose1_T_pose2_pos.grad_fn}")
+                                # pose1_T_pose2_quat = pose1_T_pose2.quaternion
+                                # if pose1_T_pose2_quat.grad_fn is not None:
+                                #     pose1_T_pose2_quat.register_hook(lambda grad: check_grad(grad, 'pose1_T_pose2_quat'))
+                                # print(f"pose1_T_pose2_quat: {pose1_T_pose2_quat}")
+                                # print(f"pose1_T_pose2_quat.grad_fn: {pose1_T_pose2_quat.grad_fn}")
+                                # inf quaternion loss: tensor([ 0.8049,  0.1227, -0.4541,  0.3616]), goal: tensor([[ 8.4696e-04, -1.6530e-03,  1.0000e+00, -5.7817e-04]], device='cuda:0')
+                                
+                                c = current_fn.forward(
+                                    pose1_T_pose2_pos,
+                                    pose1_T_pose2_quat,
+                                    self._goal_buffer,
+                                    k,
+                                )
+                                # b, h, _ = pose1_T_pose2_pos.shape
+                                # x = torch.sqrt(((pose1_T_pose2_pos.view(-1, 3) - self._goal_buffer.links_goal_pose[k].position) * current_fn.pos_weight).square().sum(dim=-1) + 1e-8)
+                                # # print(f"x.mean(): {x.mean()} current_fn.weight[3]: {current_fn.weight[3]} current_fn.weight[1]: {current_fn.weight[1]}")
+                                # # print(f'pos_weight: {current_fn.pos_weight}')
+                                # x = x * current_fn.weight[3]
+                                # pos_loss = x + torch.nn.functional.softplus(-2. * x) - math.log(2)
+                                # c = pos_loss.view(b, h) * current_fn.weight[1]
+                                cost_list.append(c)
+                        else:
+                            log_error(f"Link {k} not found in link_poses")
+                            
         if (
             self._goal_buffer.goal_state is not None
             and self.cost_cfg.cspace_cfg is not None
@@ -323,12 +404,25 @@ class ArmReacher(ArmBase, ArmReacherConfig):
                 g_dist,
             )
             cost_list.append(z_vel)
+        # for cost_name, cost_val in zip(
+        #     ['bound', 'self_collision', 'world_collision', 'ee_pose', 'link_pose', 'link_pair_pose',],
+        #     cost_list,
+        # ):
+        #     cost_sum_horizon = torch.sum(cost_val, dim=-1)
+        #     print(f"{cost_name} in seeds: min ({cost_sum_horizon.argmin()}, {cost_sum_horizon.min():.3e}) | " 
+        #           f"max ({cost_sum_horizon.argmax()}, {cost_sum_horizon.max():.3e}) | "
+        #           f"mean {cost_sum_horizon.mean():.3e}")
+        # total_costs_in_seeds = torch.sum(torch.stack(cost_list, dim=0), dim=(0, -1))
+        # print(f"Total cost in seeds: {[f'{v:.3e}' for v in total_costs_in_seeds.tolist()]}\n")
+        # assert torch.isnan(total_costs_in_seeds).sum() == 0, f"total_costs_in_seeds has NaN's: {total_costs_in_seeds}"
+            
+        if return_list:
+            return cost_list
         with profiler.record_function("cat_sum"):
             if self.sum_horizon:
                 cost = cat_sum_horizon_reacher(cost_list)
             else:
                 cost = cat_sum_reacher(cost_list)
-
         return cost
 
     def convergence_fn(
@@ -364,18 +458,40 @@ class ArmReacher(ArmBase, ArmReacherConfig):
 
             for k in self._goal_buffer.links_goal_pose.keys():
                 if k != self.kinematics.ee_link:
-                    current_fn = self._link_pose_convergence[k]
-                    if current_fn.enabled:
-                        # get link pose
-                        current_pos = link_poses[k].position
-                        current_quat = link_poses[k].quaternion
+                    if k in link_poses:
+                        current_fn = self._link_pose_convergence[k]
+                        if current_fn.enabled:
+                            # get link pose
+                            current_pos = link_poses[k].position
+                            current_quat = link_poses[k].quaternion
 
-                        pose_err, pos_err, quat_err = current_fn.forward_out_distance(
-                            current_pos, current_quat, self._goal_buffer, k
-                        )
-                        pose_error.append(pose_err)
-                        position_error.append(pos_err)
-                        quat_error.append(quat_err)
+                            pose_err, pos_err, quat_err = current_fn.forward_out_distance(
+                                current_pos, current_quat, self._goal_buffer, k
+                            )
+                            pose_error.append(pose_err)
+                            position_error.append(pos_err)
+                            quat_error.append(quat_err)
+                    elif isinstance(k, tuple):
+                        # cost on relative pose
+                        current_fn = self._link_pose_convergence[k]
+                        k1, k2 = k
+                        if current_fn.enabled:
+                            # get link pose
+                            current_pose1 = link_poses[k1]
+                            current_pose2 = link_poses[k2]
+                            # prev_batch_dims = current_pose1.position.shape[:-1]
+                            # current
+
+                            pose1_T_pose2 = current_pose1.inverse().multiply(current_pose2)
+                            pose1_T_pose2_pos = pose1_T_pose2.position
+                            pose1_T_pose2_quat = pose1_T_pose2.quaternion
+
+                            pose_err, pos_err, quat_err = current_fn.forward_out_distance(
+                                pose1_T_pose2_pos, pose1_T_pose2_quat, self._goal_buffer, k
+                            )
+                            pose_error.append(pose_err)
+                            position_error.append(pos_err)
+                            quat_error.append(quat_err)
             out_metrics.pose_error = cat_max(pose_error)
             out_metrics.rotation_error = cat_max(quat_error)
             out_metrics.position_error = cat_max(position_error)
@@ -437,10 +553,16 @@ class ArmReacher(ArmBase, ArmReacherConfig):
 
     def get_pose_costs(self, include_link_pose: bool = False, include_convergence: bool = True):
         pose_costs = [self.goal_cost]
+        if include_link_pose:
+            # log_error("Not implemented yet")
+            log_warn("Initial implementation for link_pose_costs")
+            pose_costs += list(self._link_pose_costs.values())
         if include_convergence:
             pose_costs += [self.pose_convergence]
-        if include_link_pose:
-            log_error("Not implemented yet")
+            if include_link_pose:
+                log_warn("Initial implementation for link_pose_convergence")
+                pose_costs += list(self._link_pose_convergence.values())
+        
         return pose_costs
 
     def update_pose_cost_metric(

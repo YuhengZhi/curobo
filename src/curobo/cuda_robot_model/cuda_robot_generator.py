@@ -72,6 +72,9 @@ class CudaRobotGeneratorConfig:
     #: Name of link names to compute pose in addition to ee_link.
     link_names: Optional[List[str]] = None
 
+    #: Pairs of links whose relative poses are interested in cost computation.
+    link_pairs: Optional[List[List[str, str]]] = None
+
     #: Name of links to compute sphere positions for use in collision checking.
     collision_link_names: Optional[List[str]] = None
 

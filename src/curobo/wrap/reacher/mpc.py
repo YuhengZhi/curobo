@@ -194,6 +194,9 @@ class MpcSolverConfig:
         base_cfg["cost"]["pose_cfg"]["project_distance"] = project_pose_to_goal_frame
         base_cfg["convergence"]["pose_cfg"]["project_distance"] = project_pose_to_goal_frame
         config_data["cost"]["pose_cfg"]["project_distance"] = project_pose_to_goal_frame
+        base_cfg["cost"]["link_pose_cfg"]["project_distance"] = project_pose_to_goal_frame
+        base_cfg["convergence"]["link_pose_cfg"]["project_distance"] = project_pose_to_goal_frame
+        config_data["cost"]["link_pose_cfg"]["project_distance"] = project_pose_to_goal_frame
         if collision_activation_distance is not None:
             config_data["cost"]["primitive_collision_cfg"][
                 "activation_distance"
@@ -228,6 +231,7 @@ class MpcSolverConfig:
             if use_cuda_graph is not None:
                 grad_config_data["lbfgs"]["use_cuda_graph"] = use_cuda_graph
             grad_config_data["cost"]["pose_cfg"]["project_distance"] = project_pose_to_goal_frame
+            grad_config_data["cost"]["link_pose_cfg"]["project_distance"] = project_pose_to_goal_frame
 
         cfg = ArmReacherConfig.from_dict(
             robot_cfg,

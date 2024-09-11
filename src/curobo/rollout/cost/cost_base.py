@@ -36,22 +36,22 @@ class CostConfig:
     return_loss: bool = False
 
     def __post_init__(self):
-        self.weight = self.tensor_args.to_device(self.weight)
+        self.weight = self.tensor_args.to_device(self.weight).clone()
         if len(self.weight.shape) == 0:
             self.weight = torch.tensor(
                 [self.weight], device=self.tensor_args.device, dtype=self.tensor_args.dtype
             )
         if self.vec_weight is not None:
-            self.vec_weight = self.tensor_args.to_device(self.vec_weight)
+            self.vec_weight = self.tensor_args.to_device(self.vec_weight).clone()
         if self.max_value is not None:
-            self.max_value = self.tensor_args.to_device(self.max_value)
+            self.max_value = self.tensor_args.to_device(self.max_value).clone()
         if self.hinge_value is not None:
-            self.hinge_value = self.tensor_args.to_device(self.hinge_value)
+            self.hinge_value = self.tensor_args.to_device(self.hinge_value).clone()
         if self.threshold_value is not None:
-            self.threshold_value = self.tensor_args.to_device(self.threshold_value)
+            self.threshold_value = self.tensor_args.to_device(self.threshold_value).clone()
 
     def update_vec_weight(self, vec_weight):
-        self.vec_weight = self.tensor_args.to_device(vec_weight)
+        self.vec_weight = self.tensor_args.to_device(vec_weight).clone()
 
 
 class CostBase(torch.nn.Module, CostConfig):

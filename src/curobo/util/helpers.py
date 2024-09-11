@@ -22,8 +22,11 @@ def default_to_regular(d):
 def list_idx_if_not_none(d_list: List, idx: int):
     idx_list = []
     for x in d_list:
-        if x is not None:
-            idx_list.append(x[idx])
-        else:
+        if x is None:
             idx_list.append(None)
+        elif isinstance(x, dict):
+            idx_list.append({k: v[idx] for k, v in x.items()})
+        else:
+            idx_list.append(x[idx])
+        
     return idx_list
