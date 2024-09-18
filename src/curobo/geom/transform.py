@@ -630,7 +630,7 @@ def compute_batch_transform_point(
 
 
 @wp.kernel
-def compute_batch_pose_multipy(
+def compute_batch_pose_multiply(
     position: wp.array(dtype=wp.vec3),
     quat: wp.array(dtype=wp.vec4),
     position2: wp.array(dtype=wp.vec3),
@@ -980,7 +980,7 @@ class BatchTransformPose(torch.autograd.Function):
         )
         ctx.b = b
         wp.launch(
-            kernel=compute_batch_pose_multipy,
+            kernel=compute_batch_pose_multiply,
             dim=b,
             inputs=[
                 wp.from_torch(position.detach().view(-1, 3).contiguous(), dtype=wp.vec3),
@@ -1031,7 +1031,7 @@ class BatchTransformPose(torch.autograd.Function):
         wp_adj_quat2 = wp.from_torch(adj_quaternion2.view(-1, 4), dtype=wp.vec4)
 
         wp.launch(
-            kernel=compute_batch_pose_multipy,
+            kernel=compute_batch_pose_multiply,
             dim=ctx.b,
             inputs=[
                 wp.from_torch(
@@ -1126,7 +1126,7 @@ class TransformPose(torch.autograd.Function):
         )
         ctx.b = b
         wp.launch(
-            kernel=compute_batch_pose_multipy,
+            kernel=compute_batch_pose_multiply,
             dim=b,
             inputs=[
                 wp.from_torch(position.detach().view(-1, 3).contiguous(), dtype=wp.vec3),
@@ -1177,7 +1177,7 @@ class TransformPose(torch.autograd.Function):
         wp_adj_quat2 = wp.from_torch(adj_quaternion2.view(-1, 4), dtype=wp.vec4)
 
         wp.launch(
-            kernel=compute_batch_pose_multipy,
+            kernel=compute_batch_pose_multiply,
             dim=ctx.b,
             inputs=[
                 wp.from_torch(
