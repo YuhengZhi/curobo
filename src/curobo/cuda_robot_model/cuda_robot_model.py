@@ -25,6 +25,7 @@ from typing import Any, Dict, List, Optional, Union, Tuple
 # Third Party
 import torch
 import torch.autograd.profiler as profiler
+from torch import Tensor
 
 # CuRobo
 from curobo.cuda_robot_model.cuda_robot_generator import (
