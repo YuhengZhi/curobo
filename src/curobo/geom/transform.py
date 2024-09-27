@@ -527,11 +527,7 @@ def compute_pose_inverse(
     # write pt:
     out_q = wp.transform_get_rotation(t_3)
 
-    out_v = wp.vec4()
-    out_v[0] = out_q[3]  # out_q[3]
-    out_v[1] = out_q[0]  # [0]
-    out_v[2] = out_q[1]  # wp.extract(out_q, 1)
-    out_v[3] = out_q[2]  # wp.extract(out_q, 2)
+    out_v = wp.vec4(out_q[3], out_q[0], out_q[1], out_q[2])
 
     out_position[b_idx] = wp.transform_get_translation(t_3)
     out_quat[b_idx] = out_v
@@ -553,11 +549,7 @@ def compute_matrix_to_quat(
     # create a transform from a vector/quaternion:
     out_q = wp.quat_from_matrix(in_m)
 
-    out_v = wp.vec4()
-    out_v[0] = out_q[3]  # wp.extract(out_q, 3)
-    out_v[1] = out_q[0]  # wp.extract(out_q, 0)
-    out_v[2] = out_q[1]  # wp.extract(out_q, 1)
-    out_v[3] = out_q[2]  # wp.extract(out_q, 2)
+    out_v = wp.vec4(out_q[3], out_q[0], out_q[1], out_q[2])
     # write pt:
     out_quat[b_idx] = out_v
 
@@ -662,11 +654,7 @@ def compute_batch_pose_multiply(
     # write pt:
     out_q = wp.transform_get_rotation(t_3)
 
-    out_v = wp.vec4()
-    out_v[0] = out_q[3]
-    out_v[1] = out_q[0]
-    out_v[2] = out_q[1]
-    out_v[3] = out_q[2]
+    out_v = wp.vec4(out_q[3], out_q[0], out_q[1], out_q[2])
 
     out_position[b_idx] = wp.transform_get_translation(t_3)
     out_quat[b_idx] = out_v
@@ -726,11 +714,7 @@ def compute_pose_multipy(
     # write pt:
     out_q = wp.transform_get_rotation(t_3)
 
-    out_v = wp.vec4()
-    out_v[0] = out_q[3]
-    out_v[1] = out_q[0]
-    out_v[2] = out_q[1]
-    out_v[3] = out_q[2]
+    out_v = wp.vec4(out_q[3], out_q[0], out_q[1], out_q[2])
 
     out_position[b_idx] = wp.transform_get_translation(t_3)
     out_quat[b_idx] = out_v
