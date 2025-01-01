@@ -204,7 +204,7 @@ class ParticleOptBase(Optimizer, ParticleOptConfig):
         n_iters = n_iters if n_iters is not None else self.n_iters
 
         # create cuda graph:
-
+        print(f"particle iters: {n_iters}")
         if self.use_cuda_graph:
             if not self.cu_opt_init:
                 self._initialize_cuda_graph(init_act.clone(), shift_steps=shift_steps)
@@ -257,7 +257,6 @@ class ParticleOptBase(Optimizer, ParticleOptConfig):
             self.debug.append(self._get_action_seq(mode=self.sample_mode).clone())
 
         for _ in range(n_iters):
-            print(f"particle iters: {_}/{n_iters}")
             # generate random simulated trajectories
             trajectory = self.generate_rollouts()
             trajectory.actions = trajectory.actions.view(

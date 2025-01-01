@@ -421,20 +421,24 @@ class ParallelMPPI(ParticleOptBase, ParallelMPPIConfig):
                 raise ValueError("Unidentified covariance type in update_distribution")
 
     def _get_action_seq(self, mode: SampleMode):
+        # assert not torch.allclose(self.mean_action[:1], self.mean_action[1:])
         if mode == SampleMode.MEAN:
             act_seq = self.mean_action  # .clone()  # [self.mean_idx]#.clone()
         elif mode == SampleMode.SAMPLE:
-            delta = self.generate_noise(
-                shape=torch.Size((1, self.action_horizon)),
-                base_seed=self.seed + 123 * self.num_steps,
-            )
-            act_seq = self.mean_action + torch.matmul(delta, self.full_scale_tril)
+            # delta = self.generate_noise(
+            #     shape=torch.Size((self.n_problems, self.action_horizon)),
+            #     base_seed=self.seed + 123 * self.num_steps,
+            # ).unsqueeze(dim=1)  # (self.n_problems, 1, self.action_horizon, self.d_action)
+            delta = torch.randn((self.n_problems, 1, self.action_horizon, self.d_action), device=self.tensor_args.device)
+            # act_seq = self.mean_action + torch.matmul(delta, self.full_scale_tril)
+            act_seq = self.mean_action + (delta * self.full_scale_tril).squeeze(1)
         elif mode == SampleMode.BEST:
             act_seq = self.best_traj  # [self.mean_idx]
         else:
             raise ValueError("Unidentified sampling mode in get_next_action")
 
         # act_seq = scale_ctrl(act_seq, self.action_lows, self.action_highs, squash_fn=self.squash_fn)
+        # assert act_seq.shape == (self.n_problems, self.action_horizon, self.d_action)
 
         return act_seq
 
@@ -511,18 +515,18 @@ class ParallelMPPI(ParticleOptBase, ParallelMPPIConfig):
         elif self.cov_type == CovType.FULL_HA:
             return self.inv_cov_action
 
-    @property
-    def full_scale_tril(self):
-        if self.cov_type == CovType.SIGMA_I:
-            return (
-                self.scale_tril.unsqueeze(-2).unsqueeze(-2).expand(-1, -1, self.action_horizon, -1)
-            )  # .cl
-        elif self.cov_type == CovType.DIAG_A:
-            return self.scale_tril.unsqueeze(-2).expand(-1, -1, self.action_horizon, -1)  # .cl
-        elif self.cov_type == CovType.FULL_A:
-            return self.scale_tril
-        elif self.cov_type == CovType.FULL_HA:
-            return self.scale_tril
+    # @property
+    # def full_scale_tril(self):
+    #     if self.cov_type == CovType.SIGMA_I:
+    #         return (
+    #             self.scale_tril.unsqueeze(-2).unsqueeze(-2).expand(-1, -1, self.action_horizon, -1)
+    #         )  # .cl
+    #     elif self.cov_type == CovType.DIAG_A:
+    #         return self.scale_tril.unsqueeze(-2).expand(-1, -1, self.action_horizon, -1)  # .cl
+    #     elif self.cov_type == CovType.FULL_A:
+    #         return self.scale_tril
+    #     elif self.cov_type == CovType.FULL_HA:
+    #         return self.scale_tril
 
     @property
     def entropy(self):
