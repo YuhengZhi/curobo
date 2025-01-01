@@ -211,7 +211,8 @@ class ArmReacher(ArmBase, ArmReacherConfig):
 
         if self.cost_cfg.zero_jerk_cfg is not None:
             self.zero_jerk_cost = ZeroCost(self.cost_cfg.zero_jerk_cfg)
-            self._max_vel = self.state_bounds["velocity"][1]
+            # self._max_vel = self.state_bounds["velocity"][1]
+            self._max_vel = self.state_bounds.velocity[1]
             if self.zero_jerk_cost.hinge_value is not None:
                 self._compute_g_dist = True
 
@@ -298,13 +299,13 @@ class ArmReacher(ArmBase, ArmReacherConfig):
                             k1, k2 = k
                             if current_fn.enabled:
                                 # get link pose
-                                current_pose1 = link_poses[k1]
+                                current_pose1 = link_poses[k1].contiguous()
                                 current_pose1 = Pose(
                                     position=current_pose1.position,  #.detach(),
                                     quaternion=current_pose1.quaternion,  #.detach(),
                                     normalize_rotation=False,
                                 )
-                                current_pose2 = link_poses[k2]
+                                current_pose2 = link_poses[k2].contiguous()
                                 # def check_grad(x, name=None):
                                 #     assert x is not None
                                 #     print(f'{name}.grad are all zero? {(x == 0).all()}')
