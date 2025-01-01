@@ -1793,6 +1793,9 @@ class MotionGen(MotionGenConfig):
         """
         self.world_coll_checker.load_collision_model(world, fix_cache_reference=self.use_cuda_graph)
         self.graph_planner.reset_buffer()
+        if hasattr(self, "diffco_model"):
+            self.diffco_model.update(num_samples=self.diffco_update_samples, retrain=True, verify=False, verbose=True)
+            self.diffco_model.verify(verbose=True)
 
     def clear_world_cache(self):
         """Remove all collision objects from collision cache."""
@@ -2590,6 +2593,9 @@ class MotionGen(MotionGenConfig):
         self.robot_cfg.kinematics.kinematics_config.attach_object(
             sphere_radius=sphere_radius, sphere_tensor=sphere_tensor, link_name=link_name
         )
+        if hasattr(self, "diffco_model"):
+            self.diffco_model.update(num_samples=self.diffco_update_samples, verify=False, verbose=True)
+            self.diffco_model.verify(verbose=True)
 
     def detach_spheres_from_robot(self, link_name: str = "attached_object") -> None:
         """Detach spheres from a robot's link.
@@ -2598,6 +2604,9 @@ class MotionGen(MotionGenConfig):
             link_name: Name of the link.
         """
         self.robot_cfg.kinematics.kinematics_config.detach_object(link_name)
+        if hasattr(self, "diffco_model"):
+            self.diffco_model.update(num_samples=self.diffco_update_samples, verify=False, verbose=True)
+            self.diffco_model.verify(verbose=True)
 
     def get_full_js(self, active_js: JointState) -> JointState:
         """Get full joint state from controlled joint state, appending locked joints.
