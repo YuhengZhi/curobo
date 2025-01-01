@@ -927,16 +927,18 @@ class TrajOptSolver(TrajOptSolverConfig):
             self.solver._init_solver = True
         result = self.solver.solve(goal_buffer, seed_traj)
         log_info("Ran TO")
-        traj_result = self._get_result(
-            result,
-            return_all_solutions,
-            goal_buffer,
-            seed_traj,
-            num_seeds,
-            solve_state.batch_mode,
-        )
-        if traj_result.goalset_index is not None:
-            traj_result.goalset_index[traj_result.goalset_index >= goal.goal_pose.n_goalset] = 0
+        with torch.inference_mode():
+            torch.cuda.empty_cache()
+            traj_result = self._get_result(
+                result,
+                return_all_solutions,
+                goal_buffer,
+                seed_traj,
+                num_seeds,
+                solve_state.batch_mode,
+            )
+            if traj_result.goalset_index is not None:
+                traj_result.goalset_index[traj_result.goalset_index >= goal.goal_pose.n_goalset] = 0
         if newton_iters is not None:
             self.solver.newton_optimizer.outer_iters = self._og_newton_iters
             self.solver.newton_optimizer.fixed_iters = self._og_newton_fixed_iters
