@@ -85,7 +85,23 @@ robot_cfg:
         "panda_rightfinger": 0.01,
         "attached_object": 0.0,
       }
-    #link_names: ["panda_link4"]
+    link_names: [
+      # "panda_link0",
+      "panda_link1",
+      # "panda_link2",
+      "panda_link3",
+      "panda_link4",
+      "panda_link5",
+      # "panda_link6",
+      "panda_link7",
+      # "panda_hand",
+      "ee_link",
+      "panda_leftfinger",
+      "panda_rightfinger",
+      # "panda_attached_object",
+      # "panda_ee_extra_link1",
+      # "panda_ee_extra_link2",
+    ]
     mesh_link_names:
       [
         "panda_link0",
